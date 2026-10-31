@@ -1,9 +1,10 @@
-{
+﻿{
   "name": "cortico-world-memsea",
   "version": "0.1.0",
   "type": "module",
   "description": "Cortico World：把记忆海的检索接给她——上下文被清掉之后，还能从这里把旧事捞回来。只读，不写任何记忆。",
   "license": "MIT",
+  "author": "Shi1-0Yi (https://github.com/shi1-0yi)",
   "private": true,
   "main": "./src/index.ts",
   "engines": {
