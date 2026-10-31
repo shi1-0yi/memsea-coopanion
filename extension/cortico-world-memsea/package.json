@@ -1,0 +1,41 @@
+{
+  "name": "cortico-world-memsea",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Cortico World：把记忆海的检索接给她——上下文被清掉之后，还能从这里把旧事捞回来。只读，不写任何记忆。",
+  "license": "MIT",
+  "private": true,
+  "main": "./src/index.ts",
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "cortico-world",
+    "cortico",
+    "coopanion",
+    "memory",
+    "recall"
+  ],
+  "cortico": {
+    "kind": "world",
+    "api": 6,
+    "displayName": "记忆海",
+    "describe": "describe.json",
+    "locales": {
+      "zh": {
+        "displayName": "记忆海",
+        "description": "把记忆海的检索接给她：上下文被清掉之后，还能从这里把旧事捞回来。只读，不写任何记忆。"
+      },
+      "en": {
+        "displayName": "Memory Sea",
+        "description": "Gives the bot a recall tool backed by the memory sea, so old conversations survive a context clear. Read-only."
+      }
+    },
+    "tags": ["memory", "read"]
+  },
+  "files": [
+    "src",
+    "describe.json",
+    "README.md"
+  ]
+}

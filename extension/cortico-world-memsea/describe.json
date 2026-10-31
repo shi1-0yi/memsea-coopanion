@@ -1,0 +1,33 @@
+{
+  "tools": [
+    {
+      "name": "memsea_recall",
+      "description": "Search the long-term memory sea for things that were said or written before — earlier conversations, promises, facts about the person, diary entries. Use this whenever you need to remember something that may have been cleared from the current context; the sea is built from the raw logs and never forgets on its own. Read-only. Returns matches with their timestamps and who said them, most relevant first.",
+      "parameters": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "What to look for, in Chinese. Keywords work better than a whole question."
+          },
+          "k": {
+            "type": "number",
+            "description": "How many memories to return. Default 8, max 30."
+          },
+          "days": {
+            "type": "number",
+            "description": "How far back to look, in days. Default 30, max 365."
+          }
+        },
+        "required": ["query"]
+      },
+      "tags": ["read"],
+      "summary": {
+        "zh": "在记忆海里按关键词找以前的对话、约定、事实和日记（只读，不受上下文清理影响）。",
+        "en": "Searches the memory sea for earlier conversations, promises, facts and diary entries. Read-only."
+      }
+    }
+  ],
+  "events": []
+}

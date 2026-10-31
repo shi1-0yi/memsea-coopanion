@@ -1,0 +1,48 @@
+{
+  "name": "memsea-coopanion",
+  "version": "0.1.0",
+  "description": "把 Coopanion 的记忆画成一片会遗忘、会被重新想起的三维星海，并给 bot 一个只读的检索工具。",
+  "type": "module",
+  "license": "MIT",
+  "author": "Shi1-0Yi (https://github.com/shi1-0yi)",
+  "homepage": "https://github.com/shi1-0yi/memsea-coopanion#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shi1-0yi/memsea-coopanion.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shi1-0yi/memsea-coopanion/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node tests/run.mjs",
+    "build": "node scripts/build-static.mjs",
+    "verify": "node scripts/verify-static.mjs",
+    "report:groups": "node scripts/group-report.mjs",
+    "check:forgetting": "node scripts/forget-check.mjs",
+    "show:echo": "node scripts/echo-show.mjs",
+    "serve": "node src/coo-server.mjs",
+    "demo": "node demo/make-demo.mjs"
+  },
+  "keywords": [
+    "memory",
+    "visualization",
+    "coopanion",
+    "cortico",
+    "companion",
+    "llm-agent"
+  ],
+  "files": [
+    "src",
+    "public",
+    "scripts",
+    "tests",
+    "demo",
+    "extension",
+    "README.md",
+    "README.en.md",
+    "NOTICE.md"
+  ]
+}

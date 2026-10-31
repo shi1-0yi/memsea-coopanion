@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>记忆海 · Memory Sea</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #05060b; overflow: hidden; }
+  body { font: 13px/1.5 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; color: #cfd6e4; }
+  #sea { position: fixed; inset: 0; display: block; }
+  .hud { position: fixed; z-index: 3; background: rgba(10, 13, 22, .72); border: 1px solid rgba(120, 160, 255, .18);
+         border-radius: 12px; backdrop-filter: blur(8px); }
+  #top { top: 16px; left: 16px; padding: 12px 16px; max-width: 380px; }
+  #top h1 { margin: 0 0 4px; font-size: 15px; font-weight: 600; letter-spacing: .12em; color: #9fc1ff; }
+  #top .sub { color: #6d7891; font-size: 12px; }
+  #top .stats { margin-top: 8px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: #8e9ab5; }
+  #top .stats b { color: #dbe6ff; font-weight: 600; }
+  #detail { right: 16px; bottom: 16px; width: 320px; padding: 12px 14px; display: none; pointer-events: none; }
+  #detail.on { display: block; }
+  #detail .k { color: #6d7891; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+  #detail .text { margin: 6px 0 10px; color: #e8eeff; font-size: 14px; line-height: 1.6; word-break: break-word; white-space: pre-wrap; }
+  #detail .row { display: flex; gap: 10px; flex-wrap: wrap; color: #7f8aa5; font-size: 12px; }
+  #detail .tags span { display: inline-block; margin: 0 6px 6px 0; padding: 1px 8px; border-radius: 999px;
+                       background: rgba(120, 160, 255, .12); color: #a9c1ff; font-size: 11px; }
+  #tools { left: 16px; bottom: 16px; padding: 8px; display: flex; gap: 6px; align-items: center; }
+  #tools button { background: rgba(120, 160, 255, .1); color: #b8c9ee; border: 1px solid rgba(120, 160, 255, .22);
+                  border-radius: 8px; padding: 5px 10px; font-size: 12px; cursor: pointer; }
+  #tools button:hover { background: rgba(120, 160, 255, .2); }
+  #tools button.on { background: rgba(120, 160, 255, .3); color: #fff; }
+  #hint { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); color: #4d566d; font-size: 12px; z-index: 2; }
+  #error { position: fixed; inset: 0; display: none; place-items: center; z-index: 5; color: #ff9a9a; font-size: 14px; }
+</style>
+</head>
+<body>
+<canvas id="sea"></canvas>
+
+<div class="hud" id="top">
+  <h1>记忆海</h1>
+  <div class="sub">她经历过的每一件事，都是一个点</div>
+  <div class="stats" id="stats"></div>
+</div>
+
+<div class="hud" id="detail">
+  <div class="k" id="dKind">经历</div>
+  <div class="text" id="dText"></div>
+  <div class="row"><span id="dTime"></span><span id="dTopic"></span><span id="dSource"></span></div>
+  <div class="tags" id="dTags"></div>
+</div>
+
+<div class="hud" id="tools">
+  <button id="btnFocus" class="on" title="只把本轮检索命中的点连亮">高亮焦点</button>
+  <button id="btnLabels" class="on" title="显示/隐藏每个点旁边的经历文字">标签</button>
+  <button id="btnRecent" title="只看最近 300 个点">最近 300</button>
+  <button id="btnReset" title="回到初始视角">复位</button>
+</div>
+<div id="hint">滚轮拉近拉远 · 左键拖动旋转 · 右键拖动平移 · 点一颗星看原文</div>
+<div id="error"></div>
+
+<script>window.__SCENE__ = {"ok":true,"name":"记忆海","points":[{"id":"diary_2026-10-22","t":1792683000000,"kind":"conclusion","topic":"diary","text":"2026-10-22 今天他说了挺多事，我一件件记着。晚上一起看了会儿视频。","weight":3.49,"keywords":["10","2026","22","多事","儿视","记着"],"source":{"type":"diary","id":"2026-10-22"},"diary":{"date":"2026-10-22","chars":38},"full":"2026-10-22\n今天他说了挺多事，我一件件记着。晚上一起看了会儿视频。","forget":{"importance":0.98,"retention":1,"halfLifeDays":136.6,"hits":5,"revivedAt":1793460600000},"cluster":"日记"},{"id":"lt_100000001_f0","t":1792687139000,"kind":"fact","topic":"food","text":"他喝咖啡要加半包糖","weight":1.09,"keywords":["半包","包糖","喝咖","加半","咖啡"],"source":{"type":"longterm","id":"lt_100000001_f0"},"forget":{"importance":0.5,"retention":0.36,"halfLifeDays":6.1,"hits":0},"cluster":"吃什么"},{"id":"run_r-demo-0001_0","t":1792717200000,"kind":"event","topic":"misc","text":"阿川:今天有点累，不太想说话","weight":1.15,"keywords":["阿川","今天"],"source":{"type":"message","id":"run_r-demo-0001_0"},"forget":{"importance":0.51,"retention":0.39,"halfLifeDays":6.4,"hits":0},"cluster":"上午闲聊"},{"id":"run_r-demo-0001_1","t":1792725420000,"kind":"event","topic":"misc","text":"那就别说，我陪着。","weight":1.11,"keywords":["陪着"],"source":{"type":"message","id":"run_r-demo-0001_1"},"forget":{"importance":0.5,"retention":0.38,"halfLifeDays":6.1,"hits":0},"cluster":"上午闲聊"},{"id":"run_r-demo-0001_2","t":1792733640000,"kind":"event","topic":"misc","text":"阿川:楼下那家面馆关门了","weight":1.12,"keywords":["阿川","关门","馆关","家面","楼下","面馆"],"source":{"type":"message","id":"run_r-demo-0001_2"},"forget":{"importance":0.5,"retention":0.38,"halfLifeDays":6.1,"hits":0},"cluster":"下午闲聊"},{"id":"run_r-demo-0001_3","t":1792741860000,"kind":"event","topic":"misc","text":"可惜，你上次说它家葱油拌面最好吃。","weight":1.16,"keywords":["拌面","葱油","好吃","家葱","面最","上次"],"source":{"type":"message","id":"run_r-demo-0001_3"},"forget":{"importance":0.51,"retention":0.4,"halfLifeDays":6.4,"hits":0},"cluster":"下午闲聊"},{"id":"run_r-demo-0001_4","t":1792746480000,"kind":"event","topic":"misc","text":"阿川:在改方案，改到第五版了","weight":1.17,"keywords":["阿川","第五","方案","改方","五版"],"source":{"type":"message","id":"run_r-demo-0001_4"},"forget":{"importance":0.51,"retention":0.4,"halfLifeDays":6.4,"hits":0},"cluster":"下午闲聊"},{"id":"run_r-demo-0001_5","t":1792754700000,"kind":"event","topic":"misc","text":"第五版……甲方是不是只想看你累。","weight":1.17,"keywords":["第五","甲方","五版"],"source":{"type":"message","id":"run_r-demo-0001_5"},"forget":{"importance":0.51,"retention":0.41,"halfLifeDays":6.4,"hits":0},"cluster":"问来问去"},{"id":"watch_2026-10-23","t":1792762200000,"kind":"event","topic":"video","text":"10-23 看了 1 个视频：《演示用短片：海边的黄昏》","weight":2.02,"keywords":["10","23","短片","海边","黄昏","示用"],"source":{"type":"longterm","id":"watch_2026-10-23"},"forget":{"importance":0.49,"retention":1,"halfLifeDays":7.2,"hits":1,"revivedAt":1793539800000},"cluster":"视频"},{"id":"diary_2026-10-23","t":1792769400000,"kind":"conclusion","topic":"diary","text":"2026-10-23 今天他说了挺多事，我一件件记着。他加班到很晚，回来就睡了。","weight":3.53,"keywords":["10","2026","23","多事","记着","加班"],"source":{"type":"diary","id":"2026-10-23"},"diary":{"date":"2026-10-23","chars":40},"full":"2026-10-23\n今天他说了挺多事，我一件件记着。他加班到很晚，回来就睡了。","forget":{"importance":1,"retention":0.99,"halfLifeDays":133.7,"hits":4,"revivedAt":1793374200000},"cluster":"日记"},{"id":"lt_100000001_f1","t":1792773539000,"kind":"fact","topic":"pet","text":"他养了一只橘猫叫团子","weight":1.15,"keywords":["叫团","橘猫","猫叫","团子"],"source":{"type":"longterm","id":"lt_100000001_f1"},"forget":{"importance":0.5,"retention":0.4,"halfLifeDays":6.1,"hits":0},"cluster":"猫"},{"id":"run_r-demo-0001_7","t":1792803600000,"kind":"event","topic":"misc","text":"阿川:我升职了","weight":1.18,"keywords":["阿川","升职"],"source":{"type":"message","id":"run_r-demo-0001_7"},"forget":{"importance":0.5,"retention":0.42,"halfLifeDays":6.1,"hits":0},"cluster":"上午闲聊"},{"id":"run_r-demo-0001_8","t":1792811820000,"kind":"event","topic":"misc","text":"哼，早该的。今晚加菜，我记着。","weight":1.22,"keywords":["记着","加菜","今晚","晚加","早该"],"source":{"type":"message","id":"run_r-demo-0001_8"},"forget":{"importance":0.51,"retention":0.44,"halfLifeDays":6.4,"hits":0},"cluster":"上午闲聊"},{"id":"run_r-demo-0001_9","t":1792820040000,"kind":"event","topic":"misc","text":"阿川:今天有点累，不太想说话","weight":1.23,"keywords":["阿川","今天"],"source":{"type":"message","id":"run_r-demo-0001_9"},"forget":{"importance":0.51,"retention":0.44,"halfLifeDays":6.4,"hits":0},"cluster":"下午闲聊"},{"id":"run_r-demo-0001_10","t":1792828260000,"kind":"event","topic":"misc","text":"那就别说，我陪着。","weight":1.2,"keywords":["陪着"],"source":{"type":"message","id":"run_r-demo-0001_10"},"forget":{"importance":0.5,"retention":0.43,"halfLifeDays":6.1,"hits":0},"cluster":"下午闲聊"},{"id":"run_r-demo-0001_11","t":1792832880000,"kind":"event","topic":"misc","text":"阿川:楼下那家面馆关门了","weight":1.2,"keywords":["阿川","关门","馆关","家面","楼下","面馆"],"source":{"type":"message","id":"run_r-demo-0001_11"},"forget":{"importance":0.5,"retention":0.43,"halfLifeDays":6.1,"hits":0},"cluster":"下午闲聊"},{"id":"run_r-demo-0001_12","t":1792841100000,"kind":"event","topic":"misc","text":"可惜，你上次说它家葱油拌面最好吃。","weight":1.25,"keywords":["拌面","葱油","好吃","家葱","面最","上次"],"source":{"type":"message","id":"run_r-demo-0001_12"},"forget":{"importance":0.51,"retention":0.46,"halfLifeDays":6.4,"hits":0},"cluster":"晚上闲聊"},{"id":"diary_2026-10-24","t":1792855800000,"kind":"conclusion","topic":"diary","text":"2026-10-24 今天他说了挺多事，我一件件记着。晚上一起看了会儿视频。","weight":3.49,"keywords":["10","2026","24","多事","儿视","记着"],"source":{"type":"diary","id":"2026-10-24"},"diary":{"date":"2026-10-24","chars":38},"full":"2026-10-24\n今天他说了挺多事，我一件件记着。晚上一起看了会儿视频。","forget":{"importance":0.98,"retention":1,"halfLifeDays":121.4,"hits":4,"revivedAt":1793460600000},"cluster":"日记"},{"id":"lt_100000001_f2","t":1792859939000,"kind":"fact","topic":"misc","text":"他周六想去爬山，下午有阵雨","weight":1.26,"keywords":["爬山","下午","阵雨","周六"],"source":{"type":"longterm","id":"lt_100000001_f2"},"forget":{"importance":0.51,"retention":0.47,"halfLifeDays":6.4,"hits":0},"cluster":"熬夜瞎聊"},{"id":"run_r-demo-0001_13","t":1792890000000,"kind":"event","topic":"misc","text":"阿川:团子今天吐毛球了，正常吗","weight":1.29,"keywords":["阿川","今天","毛球","天吐","吐毛","团子"],"source":{"type":"message","id":"run_r-demo-0001_13"},"forget":{"importance":0.51,"retention":0.48,"halfLifeDays":6.4,"hits":0},"cluster":"问来问去"},{"id":"run_r-demo-0001_14","t":1792898220000,"kind":"event","topic":"misc","text":"换毛季正常的，备点化毛膏就行。真一天吐好几次再去看。","weight":1.38,"keywords":["次再","好几","化毛","换毛","几次","季正"],"source":{"type":"message","id":"run_r-demo-0001_14"},"forget":{"importance":0.53,"retention":0.52,"halfLifeDays":7,"hits":0},"cluster":"上午闲聊"},{"id":"run_r-demo-0001_15","t":1792906440000,"kind":"event","topic":"misc","text":"阿川:我升职了","weight":1.27,"keywords":["阿川","升职"],"source":{"type":"message","id":"run_r-demo-0001_15"},"forget":{"importance":0.5,"retention":0.48,"halfLifeDays":6.1,"hits":0},"cluster":"下午闲聊"},{"id":"run_r-demo-0001_16","t":1792914660000,"kind":"event","topic":"misc","text":"哼，早该的。今晚加菜，我记着。","weight":1.31,"keywords":["记着","加菜","今晚","晚加","早该"],"source":{"type":"message","id":"run_r-demo-0001_16"},"forget":{"importance":0.51,"retention":0.5,"halfLifeDays":6.4,"hits":0},"cluster":"下午闲聊"},{"id":"run_r-demo-0001_17","t":1792919280000,"kind":"event","topic":"misc","text":"阿川:今天有点累，不太想说话","weight":1.32,"keywords":["阿川","今天"],"source":{"type":"message","id":"run_r-demo-0001_17"},"forget":{"importance":0.51,"retention":0.5,"halfLifeDays":6.4,"hits":0},"cluster":"下午闲聊"},{"id":"run_r-demo-0001_18","t":1792927500000,"kind":"event","topic":"misc","text":"那就别说，我陪着。","weight":1.29,"keywords":["陪着"],"source":{"type":"message","id":"run_r-demo-0001_18"},"forget":{"importance":0.5,"retention":0.49,"halfLifeDays":6.1,"hits":0},"cluster":"晚上闲聊"},{"id":"diary_2026-10-25","t":1792942200000,"kind":"conclusion","topic":"diary","text":"2026-10-25 今天他说了挺多事，我一件件记着。他加班到很晚，回来就睡了。","weight":3.53,"keywords":["10","2026","25","多事","记着","加班"],"source":{"type":"diary","id":"2026-10-25"},"diary":{"date":"2026-10-25","chars":40},"full":"2026-10-25\n今天他说了挺多事，我一件件记着。他加班到很晚，回来就睡了。","forget":{"importance":1,"retention":0.99,"halfLifeDays":117,"hits":3,"revivedAt":1793374200000},"cluster":"日记"},{"id":"lt_100000001_f3","t":1792946339000,"kind":"fact","topic":"food","text":"他血脂偏高，不能吃夜宵","weight":1.31,"keywords":["吃夜","偏高","血脂","夜宵","脂偏"],"source":{"type":"longterm","id":"lt_100000001_f3"},"forget":{"importance":0.5,"retention":0.5,"halfLifeDays":6.1,"hits":0},"cluster":"吃什么"},{"id":"run_r-demo-0001_19","t":1792976400000,"kind":"event","topic":"misc","text":"阿川:给你买了个小夜灯，暖光的","weight":1.38,"keywords":["阿川","暖光","小夜","夜灯"],"source":{"type":"message","id":"run_r-demo-0001_19"},"forget":{"importance":0.51,"retention":0.54,"halfLifeDays":6.4,"hits":0},"cluster":"上午闲聊"},{"id":"run_r-demo-0001_20","t":1792984620000,"kind":"event","topic":"misc","text":"……你怎么老在这种事上用心，库。","weight":1.39,"keywords":["上用","事上","用心","种事"],"source":{"type":"message","id":"run_r-demo-0001_20"},"forget":{"importance":0.51,"retention":0.55,"halfLifeDays":6.4,"hits":0},"cluster":"问来问去"},{"id":"run_r-demo-0001_21","t":1792992840000,"kind":"event","topic":"misc","text":"阿川:团子今天吐毛球了，正常吗","weight":1.39,"keywords":["阿川","今天","毛球","天吐","吐毛","团子"],"source":{"type":"message","id":"run_r-demo-0001_21"},"forget":{"importance":0.51,"retention":0.55,"halfLifeDays":6.4,"hits":0},"cluster":"问来问去"},{"id":"run_r-demo-0001_22","t":1793001060000,"kind":"event","topic":"misc","text":"换毛季正常的，备点化毛膏就行。真一天吐好几次再去看。","weight":1.48,"keywords":["次再","好几","化毛","换毛","几次","季正"],"source":{"type":"message","id":"run_r-demo-0001_22"},"forget":{"importance":0.53,"retention":0.59,"halfLifeDays":7,"hits":0},"cluster":"下午闲聊"},{"id":"run_r-demo-0001_23","t":1793005680000,"kind":"event","topic":"misc","text":"阿川:我升职了","weight":1.37,"keywords":["阿川","升职"],"source":{"type":"message","id":"run_r-demo-0001_23"},"forget":{"importance":0.5,"retention":0.54,"halfLifeDays":6.1,"hits":0},"cluster":"下午闲聊"},{"id":"run_r-demo-0001_24","t":1793013900000,"kind":"event","topic":"misc","text":"哼，早该的。今晚加菜，我记着。","weight":1.42,"keywords":["记着","加菜","今晚","晚加","早该"],"source":{"type":"message","id":"run_r-demo-0001_24"},"forget":{"importance":0.51,"retention":0.57,"halfLifeDays":6.4,"hits":0},"cluster":"晚上闲聊"},{"id":"watch_2026-10-26","t":1793021400000,"kind":"event","topic":"video","text":"10-26 看了 1 个视频：《演示用短片：海边的黄昏》","weight":2.02,"keywords":["10","26","短片","海边","黄昏","示用"],"source":{"type":"longterm","id":"watch_2026-10-26"},"forget":{"importance":0.49,"retention":1,"halfLifeDays":7.2,"hits":1,"revivedAt":1793539800000},"cluster":"视频"},{"id":"diary_2026-10-26","t":1793028600000,"kind":"conclusion","topic":"diary","text":"2026-10-26 今天他说了挺多事，我一件件记着。晚上一起看了会儿视频。","weight":3.49,"keywords":["10","2026","26","多事","儿视","记着"],"source":{"type":"diary","id":"2026-10-26"},"diary":{"date":"2026-10-26","chars":38},"full":"2026-10-26\n今天他说了挺多事，我一件件记着。晚上一起看了会儿视频。","forget":{"importance":0.98,"retention":1,"halfLifeDays":106.2,"hits":3,"revivedAt":1793460600000},"cluster":"日记"},{"id":"lt_100000001_f4","t":1793032739000,"kind":"fact","topic":"misc","text":"他升职了","weight":1.17,"keywords":["升职"],"source":{"type":"longterm","id":"lt_100000001_f4"},"forget":{"importance":0.44,"retention":0.47,"halfLifeDays":4.5,"hits":0},"cluster":"熬夜瞎聊"},{"id":"run_r-demo-0001_26","t":1793062800000,"kind":"event","topic":"misc","text":"阿川:体检报告出来了，血脂偏高","weight":1.47,"keywords":["阿川","报告","告出","检报","偏高","体检"],"source":{"type":"message","id":"run_r-demo-0001_26"},"forget":{"importance":0.51,"retention":0.6,"halfLifeDays":6.4,"hits":0},"cluster":"上午闲聊"},{"id":"run_r-demo-0001_27","t":1793071020000,"kind":"event","topic":"misc","text":"那这周别吃夜宵了，我盯着你。","weight":1.48,"keywords":["吃夜","盯着","夜宵"],"source":{"type":"message","id":"run_r-demo-0001_27"},"forget":{"importance":0.51,"retention":0.61,"halfLifeDays":6.4,"hits":0},"cluster":"上午闲聊"},{"id":"run_r-demo-0001_28","t":1793079240000,"kind":"event","topic":"misc","text":"阿川:给你买了个小夜灯，暖光的","weight":1.49,"keywords":["阿川","暖光","小夜","夜灯"],"source":{"type":"message","id":"run_r-demo-0001_28"},"forget":{"importance":0.51,"retention":0.61,"halfLifeDays":6.4,"hits":0},"cluster":"下午闲聊"},{"id":"run_r-demo-0001_29","t":1793087460000,"kind":"event","topic":"misc","text":"……你怎么老在这种事上用心，库。","weight":1.5,"keywords":["上用","事上","用心","种事"],"source":{"type":"message","id":"run_r-demo-0001_29"},"forget":{"importance":0.51,"retention":0.62,"halfLifeDays":6.4,"hits":0},"cluster":"问来问去"},{"id":"run_r-demo-0001_30","t":1793092080000,"kind":"event","topic":"misc","text":"阿川:团子今天吐毛球了，正常吗","weight":1.51,"keywords":["阿川","今天","毛球","天吐","吐毛","团子"],"source":{"type":"message","id":"run_r-demo-0001_30"},"forget":{"importance":0.51,"retention":0.62,"halfLifeDays":6.4,"hits":0},"cluster":"问来问去"},{"id":"run_r-demo-0001_31","t":1793100300000,"kind":"event","topic":"misc","text":"换毛季正常的，备点化毛膏就行。真一天吐好几次再去看。","weight":1.6,"keywords":["次再","好几","化毛","换毛","几次","季正"],"source":{"type":"message","id":"run_r-demo-0001_31"},"forget":{"importance":0.53,"retention":0.66,"halfLifeDays":7,"hits":0},"cluster":"晚上闲聊"},{"id":"diary_2026-10-27","t":1793115000000,"kind":"conclusion","topic":"diary","text":"2026-10-27 今天他说了挺多事，我一件件记着。他加班到很晚，回来就睡了。","weight":3.53,"keywords":["10","2026","27","多事","记着","加班"],"source":{"type":"diary","id":"2026-10-27"},"diary":{"date":"2026-10-27","chars":40},"full":"2026-10-27\n今天他说了挺多事，我一件件记着。他加班到很晚，回来就睡了。","forget":{"importance":1,"retention":0.99,"halfLifeDays":100.2,"hits":2,"revivedAt":1793374200000},"cluster":"日记"},{"id":"lt_100000001_f5","t":1793119139000,"kind":"fact","topic":"misc","text":"楼下那家面馆关门了","weight":1.5,"keywords":["关门","馆关","家面","楼下","面馆"],"source":{"type":"longterm","id":"lt_100000001_f5"},"forget":{"importance":0.5,"retention":0.63,"halfLifeDays":6.1,"hits":0},"cluster":"熬夜瞎聊"},{"id":"run_r-demo-0001_32","t":1793149200000,"kind":"event","topic":"misc","text":"阿川:下雨了，忘带伞","weight":1.54,"keywords":["阿川","带伞","忘带","下雨"],"source":{"type":"message","id":"run_r-demo-0001_32"},"forget":{"importance":0.5,"retention":0.66,"halfLifeDays":6.1,"hits":0},"cluster":"关心你"},{"id":"run_r-demo-0001_33","t":1793157420000,"kind":"event","topic":"misc","text":"站店门口别动，我给你叫车，五分钟到。","weight":1.63,"keywords":["店门","分钟","叫车","门口","五分","站店"],"source":{"type":"message","id":"run_r-demo-0001_33"},"forget":{"importance":0.52,"retention":0.69,"halfLifeDays":6.7,"hits":0},"cluster":"上午闲聊"},{"id":"run_r-demo-0001_34","t":1793165640000,"kind":"event","topic":"misc","text":"阿川:体检报告出来了，血脂偏高","weight":1.6,"keywords":["阿川","报告","告出","检报","偏高","体检"],"source":{"type":"message","id":"run_r-demo-0001_34"},"forget":{"importance":0.51,"retention":0.69,"halfLifeDays":6.4,"hits":0},"cluster":"下午闲聊"},{"id":"run_r-demo-0001_35","t":1793173860000,"kind":"event","topic":"misc","text":"那这周别吃夜宵了，我盯着你。","weight":1.61,"keywords":["吃夜","盯着","夜宵"],"source":{"type":"message","id":"run_r-demo-0001_35"},"forget":{"importance":0.51,"retention":0.69,"halfLifeDays":6.4,"hits":0},"cluster":"下午闲聊"},{"id":"run_r-demo-0001_36","t":1793178480000,"kind":"event","topic":"misc","text":"阿川:给你买了个小夜灯，暖光的","weight":1.62,"keywords":["阿川","暖光","小夜","夜灯"],"source":{"type":"message","id":"run_r-demo-0001_36"},"forget":{"importance":0.51,"retention":0.7,"halfLifeDays":6.4,"hits":0},"cluster":"下午闲聊"},{"id":"run_r-demo-0001_37","t":1793186700000,"kind":"event","topic":"misc","text":"……你怎么老在这种事上用心，库。","weight":1.63,"keywords":["上用","事上","用心","种事"],"source":{"type":"message","id":"run_r-demo-0001_37"},"forget":{"importance":0.51,"retention":0.7,"halfLifeDays":6.4,"hits":0},"cluster":"问来问去"},{"id":"diary_2026-10-28","t":1793201400000,"kind":"conclusion","topic":"diary","text":"2026-10-28 今天他说了挺多事，我一件件记着。晚上一起看了会儿视频。","weight":3.49,"keywords":["10","2026","28","多事","儿视","记着"],"source":{"type":"diary","id":"2026-10-28"},"diary":{"date":"2026-10-28","chars":38},"full":"2026-10-28\n今天他说了挺多事，我一件件记着。晚上一起看了会儿视频。","forget":{"importance":0.98,"retention":1,"halfLifeDays":91.1,"hits":2,"revivedAt":1793460600000},"cluster":"日记"},{"id":"lt_100000001_f6","t":1793205539000,"kind":"fact","topic":"misc","text":"他明早九点的会","weight":1.61,"keywords":["明早","早九"],"source":{"type":"longterm","id":"lt_100000001_f6"},"forget":{"importance":0.5,"retention":0.71,"halfLifeDays":6.1,"hits":0},"cluster":"熬夜瞎聊"},{"id":"run_r-demo-0001_38","t":1793235600000,"kind":"event","topic":"misc","text":"阿川:周末想去爬山，你查查天气","weight":1.7,"keywords":["阿川","查查","查天","爬山","天气","周末"],"source":{"type":"message","id":"run_r-demo-0001_38"},"forget":{"importance":0.51,"retention":0.75,"halfLifeDays":6.4,"hits":0},"cluster":"上午闲聊"},{"id":"run_r-demo-0001_39","t":1793243820000,"kind":"event","topic":"misc","text":"周六上午晴，下午有阵雨。要带伞，山顶那段没遮挡。","weight":1.78,"keywords":["带伞","六上","山顶","上午","午晴","下午"],"source":{"type":"message","id":"run_r-demo-0001_39"},"forget":{"importance":0.53,"retention":0.78,"halfLifeDays":7,"hits":0},"cluster":"关心你"},{"id":"run_r-demo-0001_40","t":1793252040000,"kind":"event","topic":"misc","text":"阿川:下雨了，忘带伞","weight":1.68,"keywords":["阿川","带伞","忘带","下雨"],"source":{"type":"message","id":"run_r-demo-0001_40"},"forget":{"importance":0.5,"retention":0.75,"halfLifeDays":6.1,"hits":0},"cluster":"关心你"},{"id":"run_r-demo-0001_41","t":1793260260000,"kind":"event","topic":"misc","text":"站店门口别动，我给你叫车，五分钟到。","weight":1.77,"keywords":["店门","分钟","叫车","门口","五分","站店"],"source":{"type":"message","id":"run_r-demo-0001_41"},"forget":{"importance":0.52,"retention":0.78,"halfLifeDays":6.7,"hits":0},"cluster":"下午闲聊"},{"id":"run_r-demo-0001_42","t":1793264880000,"kind":"event","topic":"misc","text":"阿川:体检报告出来了，血脂偏高","weight":1.74,"keywords":["阿川","报告","告出","检报","偏高","体检"],"source":{"type":"message","id":"run_r-demo-0001_42"},"forget":{"importance":0.51,"retention":0.78,"halfLifeDays":6.4,"hits":0},"cluster":"下午闲聊"},{"id":"run_r-demo-0001_43","t":1793273100000,"kind":"event","topic":"misc","text":"那这周别吃夜宵了，我盯着你。","weight":1.75,"keywords":["吃夜","盯着","夜宵"],"source":{"type":"message","id":"run_r-demo-0001_43"},"forget":{"importance":0.51,"retention":0.79,"halfLifeDays":6.4,"hits":0},"cluster":"晚上闲聊"},{"id":"watch_2026-10-29","t":1793280600000,"kind":"event","topic":"video","text":"10-29 看了 1 个视频：《演示用短片：海边的黄昏》","weight":2.02,"keywords":["10","29","短片","海边","黄昏","示用"],"source":{"type":"longterm","id":"watch_2026-10-29"},"forget":{"importance":0.49,"retention":1,"halfLifeDays":7.2,"hits":1,"revivedAt":1793539800000},"cluster":"视频"},{"id":"diary_2026-10-29","t":1793287800000,"kind":"conclusion","topic":"diary","text":"2026-10-29 今天他说了挺多事，我一件件记着。他加班到很晚，回来就睡了。","weight":3.52,"keywords":["10","2026","29","多事","记着","加班"],"source":{"type":"diary","id":"2026-10-29"},"diary":{"date":"2026-10-29","chars":40},"full":"2026-10-29\n今天他说了挺多事，我一件件记着。他加班到很晚，回来就睡了。","forget":{"importance":1,"retention":0.99,"halfLifeDays":83.5,"hits":1,"revivedAt":1793374200000},"cluster":"日记"},{"id":"run_r-demo-0001_45","t":1793322000000,"kind":"event","topic":"misc","text":"阿川:今天加到九点，别等我了","weight":1.83,"keywords":["阿川","今天","天加"],"source":{"type":"message","id":"run_r-demo-0001_45"},"forget":{"importance":0.51,"retention":0.84,"halfLifeDays":6.4,"hits":0},"cluster":"上午闲聊"},{"id":"run_r-demo-0001_46","t":1793330220000,"kind":"event","topic":"misc","text":"那我先把饭热上，你回来别又说不饿。","weight":2.48,"keywords":["饭热","热上"],"source":{"type":"message","id":"run_r-demo-0001_46"},"forget":{"importance":0.69,"retention":0.93,"halfLifeDays":15.1,"hits":0},"cluster":"上午闲聊"},{"id":"run_r-demo-0001_47","t":1793338440000,"kind":"event","topic":"misc","text":"阿川:周末想去爬山，你查查天气","weight":1.85,"keywords":["阿川","查查","查天","爬山","天气","周末"],"source":{"type":"message","id":"run_r-demo-0001_47"},"forget":{"importance":0.51,"retention":0.85,"halfLifeDays":6.4,"hits":0},"cluster":"下午闲聊"},{"id":"run_r-demo-0001_48","t":1793346660000,"kind":"event","topic":"misc","text":"周六上午晴，下午有阵雨。要带伞，山顶那段没遮挡。","weight":1.94,"keywords":["带伞","六上","山顶","上午","午晴","下午"],"source":{"type":"message","id":"run_r-demo-0001_48"},"forget":{"importance":0.53,"retention":0.87,"halfLifeDays":7,"hits":0},"cluster":"关心你"},{"id":"run_r-demo-0001_49","t":1793351280000,"kind":"event","topic":"misc","text":"阿川:下雨了，忘带伞","weight":1.84,"keywords":["阿川","带伞","忘带","下雨"],"source":{"type":"message","id":"run_r-demo-0001_49"},"forget":{"importance":0.5,"retention":0.86,"halfLifeDays":6.1,"hits":0},"cluster":"关心你"},{"id":"run_r-demo-0001_50","t":1793359500000,"kind":"event","topic":"misc","text":"站店门口别动，我给你叫车，五分钟到。","weight":1.92,"keywords":["店门","分钟","叫车","门口","五分","站店"],"source":{"type":"message","id":"run_r-demo-0001_50"},"forget":{"importance":0.52,"retention":0.88,"halfLifeDays":6.7,"hits":0},"cluster":"晚上闲聊"},{"id":"diary_2026-10-30","t":1793374200000,"kind":"conclusion","topic":"diary","text":"2026-10-30 今天他说了挺多事，我一件件记着。晚上一起看了会儿视频。","weight":3.49,"keywords":["10","2026","30","多事","儿视","记着"],"source":{"type":"diary","id":"2026-10-30"},"diary":{"date":"2026-10-30","chars":38},"full":"2026-10-30\n今天他说了挺多事，我一件件记着。晚上一起看了会儿视频。","forget":{"importance":0.98,"retention":1,"halfLifeDays":75.9,"hits":1,"revivedAt":1793460600000},"cluster":"日记"},{"id":"run_r-demo-0001_51","t":1793408400000,"kind":"event","topic":"misc","text":"阿川:团子昨晚又趴我键盘上睡了","weight":1.98,"keywords":["阿川","键盘","盘上","上睡","团子","晚又"],"source":{"type":"message","id":"run_r-demo-0001_51"},"forget":{"importance":0.51,"retention":0.93,"halfLifeDays":6.4,"hits":0},"cluster":"上午闲聊"},{"id":"run_r-demo-0001_52","t":1793416620000,"kind":"event","topic":"misc","text":"它挑地方的本事一向好，键盘暖，还有你手在旁边。","weight":2.05,"keywords":["本事","地方","键盘","盘暖","旁边","挑地"],"source":{"type":"message","id":"run_r-demo-0001_52"},"forget":{"importance":0.53,"retention":0.95,"halfLifeDays":7,"hits":0},"cluster":"上午闲聊"},{"id":"run_r-demo-0001_53","t":1793424840000,"kind":"event","topic":"misc","text":"阿川:今天加到九点，别等我了","weight":2,"keywords":["阿川","今天","天加"],"source":{"type":"message","id":"run_r-demo-0001_53"},"forget":{"importance":0.51,"retention":0.95,"halfLifeDays":6.4,"hits":0},"cluster":"下午闲聊"},{"id":"run_r-demo-0001_54","t":1793433060000,"kind":"event","topic":"misc","text":"那我先把饭热上，你回来别又说不饿。","weight":2.59,"keywords":["饭热","热上"],"source":{"type":"message","id":"run_r-demo-0001_54"},"forget":{"importance":0.69,"retention":0.98,"halfLifeDays":15.1,"hits":0},"cluster":"下午闲聊"},{"id":"run_r-demo-0001_55","t":1793437680000,"kind":"event","topic":"misc","text":"阿川:周末想去爬山，你查查天气","weight":2.03,"keywords":["阿川","查查","查天","爬山","天气","周末"],"source":{"type":"message","id":"run_r-demo-0001_55"},"forget":{"importance":0.51,"retention":0.97,"halfLifeDays":6.4,"hits":0},"cluster":"下午闲聊"},{"id":"run_r-demo-0001_56","t":1793445900000,"kind":"event","topic":"misc","text":"周六上午晴，下午有阵雨。要带伞，山顶那段没遮挡。","weight":2.11,"keywords":["带伞","六上","山顶","上午","午晴","下午"],"source":{"type":"message","id":"run_r-demo-0001_56"},"forget":{"importance":0.53,"retention":0.98,"halfLifeDays":7,"hits":0},"cluster":"关心你"},{"id":"diary_2026-10-31","t":1793460600000,"kind":"conclusion","topic":"diary","text":"2026-10-31 今天他说了挺多事，我一件件记着。他加班到很晚，回来就睡了。","weight":3.55,"keywords":["10","2026","31","多事","记着","加班"],"source":{"type":"diary","id":"2026-10-31"},"diary":{"date":"2026-10-31","chars":40},"full":"2026-10-31\n今天他说了挺多事，我一件件记着。他加班到很晚，回来就睡了。","forget":{"importance":1,"retention":1,"halfLifeDays":66.8,"hits":0},"cluster":"日记"},{"id":"run_r-demo-0001_57","t":1793464378966,"kind":"event","topic":"misc","text":"那我先把饭热上，你回来别又说不饿。","weight":2.62,"keywords":["饭热","热上"],"source":{"type":"message","id":"run_r-demo-0001_57"},"forget":{"importance":0.69,"retention":1,"halfLifeDays":15.1,"hits":0},"cluster":"熬夜瞎聊"},{"id":"run_r-demo-0001_58","t":1793464438966,"kind":"event","topic":"misc","text":"阿川:今天加到九点，别等我了","weight":2.08,"keywords":["阿川","今天","天加"],"source":{"type":"message","id":"run_r-demo-0001_58"},"forget":{"importance":0.51,"retention":1,"halfLifeDays":6.4,"hits":0},"cluster":"熬夜瞎聊"},{"id":"run_r-demo-0001_59","t":1793464498966,"kind":"event","topic":"misc","text":"它挑地方的本事一向好，键盘暖，还有你手在旁边。","weight":2.14,"keywords":["本事","地方","键盘","盘暖","旁边","挑地"],"source":{"type":"message","id":"run_r-demo-0001_59"},"forget":{"importance":0.53,"retention":1,"halfLifeDays":7,"hits":0},"cluster":"熬夜瞎聊"},{"id":"run_r-demo-0001_60","t":1793464558966,"kind":"event","topic":"misc","text":"阿川:团子昨晚又趴我键盘上睡了","weight":2.08,"keywords":["阿川","键盘","盘上","上睡","团子","晚又"],"source":{"type":"message","id":"run_r-demo-0001_60"},"forget":{"importance":0.51,"retention":1,"halfLifeDays":6.4,"hits":0},"cluster":"熬夜瞎聊"},{"id":"run_r-demo-0001_61","t":1793464618966,"kind":"event","topic":"misc","text":"半包？你那杯本来就浓，加糖也没用吧，库。","weight":2.11,"keywords":["半包","杯本","加糖"],"source":{"type":"message","id":"run_r-demo-0001_61"},"forget":{"importance":0.52,"retention":1,"halfLifeDays":6.7,"hits":0},"cluster":"问来问去"},{"id":"run_r-demo-0001_62","t":1793464678966,"kind":"event","topic":"misc","text":"阿川:今早的咖啡太苦了，我加了半包糖","weight":2.11,"keywords":["阿川","半包","包糖","啡太","今早","咖啡"],"source":{"type":"message","id":"run_r-demo-0001_62"},"forget":{"importance":0.52,"retention":1,"halfLifeDays":6.7,"hits":0},"cluster":"熬夜瞎聊"},{"id":"pt_5LuW5a-554","t":1793464738980,"kind":"fact","topic":"owner-profile","text":"他对猫毛过敏但对团子没办法","weight":3.55,"keywords":["办法","过敏","猫毛","毛过","团子"],"source":{"type":"longterm","id":"pt_5LuW5a-554"},"forget":{"importance":1,"retention":1,"halfLifeDays":66.8,"hits":0},"cluster":"主人是谁"},{"id":"pt_5LuW5LiN5a","t":1793464738980,"kind":"fact","topic":"owner-profile","text":"他不太会照顾自己","weight":3.1,"keywords":["顾自","照顾","自己"],"source":{"type":"longterm","id":"pt_5LuW5LiN5a"},"forget":{"importance":0.85,"retention":1,"halfLifeDays":32.5,"hits":0},"cluster":"主人是谁"},{"id":"pt_5LuW5Zac5q","t":1793464738980,"kind":"feeling","topic":"owner-profile","text":"他喜欢在雨天听老歌","weight":3.1,"keywords":["老歌","天听","听老","喜欢","雨天"],"source":{"type":"longterm","id":"pt_5LuW5Zac5q"},"forget":{"importance":0.85,"retention":1,"halfLifeDays":32.5,"hits":0},"cluster":"主人是谁"},{"id":"watch_2026-11-01","t":1793539800000,"kind":"event","topic":"video","text":"11-01 看了 1 个视频：《演示用短片：海边的黄昏》","weight":2.02,"keywords":["01","11","短片","海边","黄昏","示用"],"source":{"type":"longterm","id":"watch_2026-11-01"},"forget":{"importance":0.49,"retention":1,"halfLifeDays":5.8,"hits":0},"cluster":"视频"}],"edges":[{"a":"diary_2026-10-22","b":"diary_2026-10-26","score":0.902,"kind":"topic"},{"a":"diary_2026-10-24","b":"diary_2026-10-26","score":0.902,"kind":"topic"},{"a":"diary_2026-10-26","b":"diary_2026-10-28","score":0.902,"kind":"topic"},{"a":"diary_2026-10-23","b":"diary_2026-10-25","score":0.894,"kind":"topic"},{"a":"diary_2026-10-23","b":"diary_2026-10-27","score":0.894,"kind":"topic"},{"a":"diary_2026-10-23","b":"diary_2026-10-29","score":0.894,"kind":"topic"},{"a":"diary_2026-10-25","b":"diary_2026-10-27","score":0.894,"kind":"topic"},{"a":"diary_2026-10-25","b":"diary_2026-10-29","score":0.894,"kind":"topic"},{"a":"diary_2026-10-27","b":"diary_2026-10-29","score":0.894,"kind":"topic"},{"a":"diary_2026-10-22","b":"diary_2026-10-24","score":0.893,"kind":"topic"},{"a":"diary_2026-10-22","b":"diary_2026-10-28","score":0.893,"kind":"topic"},{"a":"diary_2026-10-24","b":"diary_2026-10-28","score":0.893,"kind":"topic"},{"a":"diary_2026-10-26","b":"diary_2026-10-30","score":0.883,"kind":"topic"},{"a":"diary_2026-10-23","b":"diary_2026-10-31","score":0.877,"kind":"topic"},{"a":"diary_2026-10-25","b":"diary_2026-10-31","score":0.877,"kind":"topic"},{"a":"diary_2026-10-27","b":"diary_2026-10-31","score":0.877,"kind":"topic"},{"a":"diary_2026-10-29","b":"diary_2026-10-31","score":0.877,"kind":"topic"},{"a":"diary_2026-10-22","b":"diary_2026-10-30","score":0.875,"kind":"topic"},{"a":"diary_2026-10-24","b":"diary_2026-10-30","score":0.875,"kind":"topic"},{"a":"diary_2026-10-28","b":"diary_2026-10-30","score":0.875,"kind":"topic"},{"a":"watch_2026-10-23","b":"watch_2026-10-26","score":0.87,"kind":"topic"},{"a":"watch_2026-10-23","b":"watch_2026-10-29","score":0.87,"kind":"topic"},{"a":"watch_2026-10-26","b":"watch_2026-10-29","score":0.87,"kind":"topic"},{"a":"run_r-demo-0001_8","b":"run_r-demo-0001_16","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_8","b":"run_r-demo-0001_24","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_16","b":"run_r-demo-0001_24","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_0","b":"run_r-demo-0001_9","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_0","b":"run_r-demo-0001_17","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_2","b":"run_r-demo-0001_11","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_7","b":"run_r-demo-0001_15","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_7","b":"run_r-demo-0001_23","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_9","b":"run_r-demo-0001_17","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_13","b":"run_r-demo-0001_21","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_13","b":"run_r-demo-0001_30","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_15","b":"run_r-demo-0001_23","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_19","b":"run_r-demo-0001_28","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_19","b":"run_r-demo-0001_36","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_21","b":"run_r-demo-0001_30","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_26","b":"run_r-demo-0001_34","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_26","b":"run_r-demo-0001_42","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_28","b":"run_r-demo-0001_36","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_32","b":"run_r-demo-0001_40","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_32","b":"run_r-demo-0001_49","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_34","b":"run_r-demo-0001_42","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_38","b":"run_r-demo-0001_47","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_38","b":"run_r-demo-0001_55","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_40","b":"run_r-demo-0001_49","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_45","b":"run_r-demo-0001_53","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_45","b":"run_r-demo-0001_58","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_47","b":"run_r-demo-0001_55","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_51","b":"run_r-demo-0001_60","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_53","b":"run_r-demo-0001_58","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_1","b":"run_r-demo-0001_10","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_1","b":"run_r-demo-0001_18","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_10","b":"run_r-demo-0001_18","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_3","b":"run_r-demo-0001_12","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_39","b":"run_r-demo-0001_48","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_39","b":"run_r-demo-0001_56","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_48","b":"run_r-demo-0001_56","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_14","b":"run_r-demo-0001_22","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_14","b":"run_r-demo-0001_31","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_22","b":"run_r-demo-0001_31","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_27","b":"run_r-demo-0001_35","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_27","b":"run_r-demo-0001_43","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_35","b":"run_r-demo-0001_43","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_20","b":"run_r-demo-0001_29","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_20","b":"run_r-demo-0001_37","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_29","b":"run_r-demo-0001_37","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_33","b":"run_r-demo-0001_41","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_33","b":"run_r-demo-0001_50","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_41","b":"run_r-demo-0001_50","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_46","b":"run_r-demo-0001_54","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_46","b":"run_r-demo-0001_57","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_54","b":"run_r-demo-0001_57","score":0.75,"kind":"word"},{"a":"run_r-demo-0001_52","b":"run_r-demo-0001_59","score":0.75,"kind":"word"},{"a":"watch_2026-10-23","b":"watch_2026-11-01","score":0.727,"kind":"topic"},{"a":"watch_2026-10-26","b":"watch_2026-11-01","score":0.727,"kind":"topic"},{"a":"watch_2026-10-29","b":"watch_2026-11-01","score":0.727,"kind":"topic"},{"a":"diary_2026-10-23","b":"diary_2026-10-26","score":0.68,"kind":"topic"},{"a":"diary_2026-10-25","b":"diary_2026-10-26","score":0.68,"kind":"topic"},{"a":"run_r-demo-0001_2","b":"lt_100000001_f5","score":0.68,"kind":"word"},{"a":"run_r-demo-0001_11","b":"lt_100000001_f5","score":0.68,"kind":"word"},{"a":"diary_2026-10-22","b":"diary_2026-10-23","score":0.676,"kind":"topic"},{"a":"diary_2026-10-22","b":"diary_2026-10-25","score":0.676,"kind":"topic"},{"a":"diary_2026-10-24","b":"diary_2026-10-27","score":0.676,"kind":"topic"},{"a":"diary_2026-10-24","b":"diary_2026-10-29","score":0.676,"kind":"topic"},{"a":"diary_2026-10-27","b":"diary_2026-10-28","score":0.676,"kind":"topic"},{"a":"diary_2026-10-28","b":"diary_2026-10-29","score":0.676,"kind":"topic"},{"a":"diary_2026-10-30","b":"diary_2026-10-31","score":0.676,"kind":"topic"},{"a":"run_r-demo-0001_7","b":"lt_100000001_f4","score":0.517,"kind":"word"},{"a":"run_r-demo-0001_15","b":"lt_100000001_f4","score":0.517,"kind":"word"},{"a":"run_r-demo-0001_23","b":"lt_100000001_f4","score":0.517,"kind":"word"},{"a":"run_r-demo-0001_0","b":"run_r-demo-0001_45","score":0.455,"kind":"word"},{"a":"run_r-demo-0001_0","b":"run_r-demo-0001_53","score":0.455,"kind":"word"},{"a":"run_r-demo-0001_0","b":"run_r-demo-0001_58","score":0.455,"kind":"word"},{"a":"run_r-demo-0001_9","b":"run_r-demo-0001_45","score":0.455,"kind":"word"},{"a":"run_r-demo-0001_9","b":"run_r-demo-0001_53","score":0.455,"kind":"word"},{"a":"run_r-demo-0001_9","b":"run_r-demo-0001_58","score":0.455,"kind":"word"},{"a":"run_r-demo-0001_17","b":"run_r-demo-0001_45","score":0.455,"kind":"word"},{"a":"run_r-demo-0001_17","b":"run_r-demo-0001_53","score":0.455,"kind":"word"},{"a":"run_r-demo-0001_17","b":"run_r-demo-0001_58","score":0.455,"kind":"word"},{"a":"run_r-demo-0001_0","b":"run_r-demo-0001_13","score":0.433,"kind":"word"},{"a":"run_r-demo-0001_9","b":"run_r-demo-0001_13","score":0.433,"kind":"word"},{"a":"run_r-demo-0001_13","b":"run_r-demo-0001_17","score":0.433,"kind":"word"},{"a":"run_r-demo-0001_4","b":"run_r-demo-0001_5","score":0.331,"kind":"word"},{"a":"lt_100000001_f3","b":"run_r-demo-0001_27","score":0.306,"kind":"word"},{"a":"lt_100000001_f3","b":"run_r-demo-0001_35","score":0.306,"kind":"word"},{"a":"lt_100000001_f3","b":"run_r-demo-0001_43","score":0.306,"kind":"word"},{"a":"run_r-demo-0001_13","b":"run_r-demo-0001_45","score":0.3,"kind":"word"},{"a":"run_r-demo-0001_21","b":"run_r-demo-0001_53","score":0.3,"kind":"word"},{"a":"run_r-demo-0001_21","b":"run_r-demo-0001_58","score":0.3,"kind":"word"},{"a":"pt_5LuW5a-554","b":"pt_5LuW5LiN5a","score":0.3,"kind":"topic"},{"a":"pt_5LuW5LiN5a","b":"pt_5LuW5Zac5q","score":0.3,"kind":"topic"},{"a":"pt_5LuW5a-554","b":"pt_5LuW5Zac5q","score":0.3,"kind":"topic"},{"a":"lt_100000001_f0","b":"run_r-demo-0001_62","score":0.293,"kind":"word"},{"a":"run_r-demo-0001_21","b":"run_r-demo-0001_23","score":0.242,"kind":"word"},{"a":"run_r-demo-0001_7","b":"run_r-demo-0001_32","score":0.232,"kind":"word"},{"a":"run_r-demo-0001_7","b":"run_r-demo-0001_40","score":0.232,"kind":"word"},{"a":"run_r-demo-0001_7","b":"run_r-demo-0001_49","score":0.232,"kind":"word"},{"a":"run_r-demo-0001_15","b":"run_r-demo-0001_32","score":0.232,"kind":"word"},{"a":"run_r-demo-0001_15","b":"run_r-demo-0001_40","score":0.232,"kind":"word"},{"a":"run_r-demo-0001_15","b":"run_r-demo-0001_49","score":0.232,"kind":"word"},{"a":"run_r-demo-0001_23","b":"run_r-demo-0001_32","score":0.232,"kind":"word"},{"a":"run_r-demo-0001_23","b":"run_r-demo-0001_40","score":0.232,"kind":"word"},{"a":"run_r-demo-0001_61","b":"run_r-demo-0001_62","score":0.195,"kind":"word"},{"a":"run_r-demo-0001_21","b":"run_r-demo-0001_51","score":0.181,"kind":"word"},{"a":"run_r-demo-0001_30","b":"run_r-demo-0001_51","score":0.181,"kind":"word"},{"a":"run_r-demo-0001_30","b":"run_r-demo-0001_60","score":0.181,"kind":"word"},{"a":"lt_100000001_f2","b":"run_r-demo-0001_39","score":0.17,"kind":"time"},{"a":"lt_100000001_f2","b":"run_r-demo-0001_48","score":0.17,"kind":"time"},{"a":"lt_100000001_f2","b":"run_r-demo-0001_56","score":0.17,"kind":"time"},{"a":"run_r-demo-0001_48","b":"run_r-demo-0001_49","score":0.153,"kind":"time"},{"a":"lt_100000001_f2","b":"run_r-demo-0001_38","score":0.153,"kind":"time"},{"a":"lt_100000001_f2","b":"run_r-demo-0001_47","score":0.153,"kind":"time"},{"a":"lt_100000001_f2","b":"run_r-demo-0001_55","score":0.153,"kind":"time"}],"stats":{"total":84,"edges":135,"byKind":{"conclusion":10,"fact":9,"event":64,"feeling":1},"byTopic":{"diary":10,"food":2,"misc":64,"video":4,"pet":1,"owner-profile":3},"byCluster":{"日记":10,"吃什么":2,"上午闲聊":14,"下午闲聊":21,"问来问去":8,"视频":4,"猫":1,"晚上闲聊":6,"熬夜瞎聊":9,"关心你":6,"主人是谁":3},"focusCount":0,"span":{"from":1792683000000,"to":1793539800000},"generatedAt":1793464738995},"forget":{"collected":84,"kept":84,"dropped":0,"aged":0,"capacity":0,"byProto":{},"echoes":{"revived":12,"totalMentions":28,"candidates":58,"duplicatesSkipped":23,"top":[{"id":"diary_2026-10-22","hits":5,"lastMentionAt":1793460600000,"text":"2026-10-22 今天他说了挺多事，我一件件记着。晚上一起看了会儿视频。"},{"id":"diary_2026-10-23","hits":4,"lastMentionAt":1793374200000,"text":"2026-10-23 今天他说了挺多事，我一件件记着。他加班到很晚，回来就睡了。"},{"id":"diary_2026-10-24","hits":4,"lastMentionAt":1793460600000,"text":"2026-10-24 今天他说了挺多事，我一件件记着。晚上一起看了会儿视频。"},{"id":"diary_2026-10-25","hits":3,"lastMentionAt":1793374200000,"text":"2026-10-25 今天他说了挺多事，我一件件记着。他加班到很晚，回来就睡了。"},{"id":"diary_2026-10-26","hits":3,"lastMentionAt":1793460600000,"text":"2026-10-26 今天他说了挺多事，我一件件记着。晚上一起看了会儿视频。"}]},"examples":[]}};</script>
+<script>
+(() => {
+  const params = new URLSearchParams(location.search);
+  const canvas = document.getElementById('sea');
+  const ctx = canvas.getContext('2d');
+  const elStats = document.getElementById('stats');
+  const elError = document.getElementById('error');
+  const detail = document.getElementById('detail');
+
+  const KIND_LABEL = { event: '经历', feeling: '心情', fact: '事实', plan: '约定', conclusion: '结论' };
+  const KIND_COLOR = {
+    event: [150, 190, 255], feeling: [255, 160, 210], fact: [130, 230, 200],
+    plan: [255, 210, 140], conclusion: [190, 165, 255],
+  };
+  const DIARY_COLOR = [255, 205, 120];
+
+  let scene = null;
+  let points = [];
+  let edges = [];
+  let focus = new Set();
+  const FOCAL = 1100;
+  const CAM_DEFAULT = { yaw: 0.45, pitch: -0.30, dist: 1200, panX: 0, panY: 0 };
+  let cam = { ...CAM_DEFAULT };
+  let lastPos = new Map();
+  let dragging = null;
+  let dragMoved = false;
+  let hovered = null;
+  let selected = null;
+  let onlyFocus = false;
+  let showLabels = true;
+  let lastFetch = 0;
+
+  const hash = (str) => {
+    let h = 2166136261;
+    for (let i = 0; i < str.length; i += 1) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+    return h >>> 0;
+  };
+  const rand = (str) => (hash(str) % 100000) / 100000;
+
+  function resize() {
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = Math.floor(innerWidth * dpr);
+    canvas.height = Math.floor(innerHeight * dpr);
+    canvas.style.width = innerWidth + 'px';
+    canvas.style.height = innerHeight + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function layout(list) {
+    // 三维：每个簇占球面上的一个方向，簇内点在各自的小球壳里散开，靠 z 拉开前后。
+    const clusterOf = (point) => point.cluster || (point.topic === 'misc' ? '日常琐事' : point.topic);
+    const topics = [...new Set(list.map(clusterOf))];
+    const centers = new Map();
+    const total = Math.max(1, topics.length);
+    topics.forEach((topic, index) => {
+      // 斐波那契球面：簇与簇之间在三维里均匀铺开
+      const y = total === 1 ? 0 : 1 - (index / (total - 1)) * 2;
+      const ring = Math.sqrt(Math.max(0, 1 - y * y));
+      const phi = index * Math.PI * (3 - Math.sqrt(5)) + rand(topic) * 0.6;
+      const radius = 230 + rand(topic + 'r') * 190;
+      centers.set(topic, {
+        x: Math.cos(phi) * ring * radius,
+        y: y * radius * 0.82,
+        z: Math.sin(phi) * ring * radius,
+      });
+    });
+    list.forEach((point) => {
+      const cluster = clusterOf(point);
+      const center = centers.get(cluster) || { x: 0, y: 0, z: 0 };
+      const a = rand(point.id + 'a') * Math.PI * 2;
+      const b = Math.acos(2 * rand(point.id + 'b') - 1);
+      const rr = 16 + Math.pow(rand(point.id + 'r'), 0.65) * 120;
+      point.x = center.x + Math.sin(b) * Math.cos(a) * rr;
+      point.y = center.y + Math.cos(b) * rr * 0.72;
+      point.z = center.z + Math.sin(b) * Math.sin(a) * rr;
+      point.phase = rand(point.id + 'p') * Math.PI * 2;
+      point.radius = 1.1 + Math.min(2.4, point.weight * 0.55);
+    });
+  }
+
+  function ingest(data) {
+    scene = data;
+    points = (data.points || []).map((p) => ({ ...p }));
+    layout(points);
+    focus = new Set(data.focusIds || []);
+    const byId = new Map(points.map((p) => [p.id, p]));
+    edges = (data.edges || []).filter((e) => byId.has(e.a) && byId.has(e.b));
+    const s = data.stats || {};
+    const span = s.span ? Math.max(1, Math.round((s.span.to - s.span.from) / 86400000)) : 0;
+    elStats.innerHTML = [
+      `点 <b>${s.total || 0}</b>`, `线 <b>${s.edges || edges.length}</b>`,
+      `跨度 <b>${span}</b> 天`, `焦点 <b>${s.focusCount || 0}</b>`,
+    ].join('<span style="color:#2a3245"> | </span>');
+  }
+
+  async function load(rebuild) {
+    try {
+      const data = window.__SCENE__ ?? (await (await fetch('/api/scene')).json());
+      if (window.__SCENE__ && rebuild) { ingest(window.__SCENE__); return; }
+      if (!data.ok) throw new Error(data.error || '接口返回失败');
+      ingest(data);
+      lastFetch = Date.now();
+      elError.style.display = 'none';
+    } catch (error) {
+      elError.textContent = `读不到场景：${error.message}（请确认服务已在运行）`;
+      elError.style.display = 'grid';
+    }
+  }
+
+  function visiblePoints() {
+    if (onlyFocus && focus.size) return points.filter((p) => focus.has(p.id) || true);
+    return points;
+  }
+
+  // 三维投影：先绕 Y 轴转（yaw）、再绕 X 轴转（pitch），最后透视除法。
+  function project(point, t) {
+    const drift = onlyFocus ? 0 : 1;
+    const wx = point.x + cam.panX + Math.sin(t / 3200 + point.phase) * 7 * drift;
+    const wy = point.y + cam.panY + Math.cos(t / 4100 + point.phase) * 5 * drift;
+    const wz = point.z + Math.sin(t / 2700 + point.phase * 1.3) * 7 * drift;
+    const cy = Math.cos(cam.yaw);
+    const sy = Math.sin(cam.yaw);
+    const cp = Math.cos(cam.pitch);
+    const sp = Math.sin(cam.pitch);
+    const x1 = wx * cy - wz * sy;
+    const z1 = wx * sy + wz * cy;
+    const y1 = wy * cp - z1 * sp;
+    const z2 = wy * sp + z1 * cp;
+    const depth = cam.dist + z2;
+    const f = FOCAL / Math.max(140, depth);
+    return {
+      x: innerWidth / 2 + x1 * f,
+      y: innerHeight / 2 + y1 * f,
+      f,
+      depth,
+    };
+  }
+
+  function frame(t) {
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    // 背景星尘
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    for (let i = 0; i < 140; i += 1) {
+      const x = (hash('bg' + i) % 1000) / 1000 * innerWidth;
+      const y = (hash('bgy' + i) % 1000) / 1000 * innerHeight;
+      const a = 0.05 + ((Math.sin(t / 2600 + i) + 1) / 2) * 0.12;
+      ctx.fillStyle = `rgba(150,180,255,${a})`;
+      ctx.fillRect(x, y, 1, 1);
+    }
+    ctx.restore();
+
+    const list = visiblePoints();
+    const pos = new Map();
+    for (const point of list) pos.set(point.id, project(point, t));
+    lastPos = pos;
+
+    // 远 → 近 排序，后画的压住先画的，才有纵深遮挡感
+    const order = list.slice().sort((a, b) => pos.get(b.id).depth - pos.get(a.id).depth);
+    const idx = new Set(list.map((p) => p.id));
+
+    // 线
+    ctx.lineWidth = 1;
+    for (const edge of edges) {
+      if (!idx.has(edge.a) || !idx.has(edge.b)) continue;
+      if (onlyFocus && !(focus.has(edge.a) && focus.has(edge.b))) continue;
+      const a = pos.get(edge.a);
+      const b = pos.get(edge.b);
+      const near = (a.f + b.f) * 0.5;
+      const alpha = Math.min(0.5, (0.03 + edge.score * 0.18) * near * 1.7);
+      ctx.strokeStyle = edge.kind === 'topic'
+        ? `rgba(120,170,255,${alpha})`
+        : `rgba(180,200,230,${alpha * 0.8})`;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    }
+
+    // 簇名：每个 cluster 取成员投影重心打一个淡标签
+    const groups = new Map();
+    for (const point of list) {
+      const key = point.cluster || point.topic || 'misc';
+      const p = pos.get(point.id);
+      const acc = groups.get(key) || { x: 0, y: 0, n: 0, near: 0 };
+      acc.x += p.x; acc.y += p.y; acc.n += 1; acc.near = Math.max(acc.near, p.f);
+      groups.set(key, acc);
+    }
+    ctx.font = '600 13px system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+    ctx.textAlign = 'center';
+    for (const [key, acc] of groups) {
+      if (acc.n < 6) continue;
+      ctx.globalAlpha = (onlyFocus ? 0.12 : 0.5) * Math.min(1, acc.near * 1.5);
+      ctx.fillStyle = '#a9c0e6';
+      ctx.fillText(`${key} ${acc.n}`, acc.x / acc.n, acc.y / acc.n);
+    }
+    ctx.globalAlpha = 1;
+    ctx.textAlign = 'left';
+
+    // 点：远小近大、远淡近亮
+    for (const point of order) {
+      const p = pos.get(point.id);
+      const isFocus = focus.has(point.id);
+      const isSel = selected === point.id;
+      const isHover = hovered === point.id;
+      const [r, g, b] = point.diary ? DIARY_COLOR : (KIND_COLOR[point.kind] || KIND_COLOR.event);
+      const dim = onlyFocus && !isFocus;
+      const base = Math.max(0.8, point.radius * (isFocus ? 1.9 : 1) * p.f * 1.75);
+      // 遗忘：权重越低越淡，弱的记忆连亮度一起退（上游只按远近定透明度，这里补一层）
+      const fade = Math.min(1, 0.35 + (Number(point.weight) || 1) * 0.25);
+      ctx.globalAlpha = dim ? 0.1 : Math.min(1, (0.22 + p.f * 1.05) * fade);
+
+      if (isFocus || isHover || isSel) {
+        const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, base * 7);
+        glow.addColorStop(0, `rgba(${r},${g},${b},${isSel ? 0.55 : 0.35})`);
+        glow.addColorStop(1, `rgba(${r},${g},${b},0)`);
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, base * 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = `rgba(${r},${g},${b},${0.5 + 0.3 * Math.sin(t / 600)})`;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, base * 3.2, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = `rgba(${r},${g},${b},${isFocus ? 1 : 0.85})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, Math.max(0.8, base), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // 每个点旁边标一句它是什么
+    drawPointLabels(list, pos, t);
+
+    // 悬停文字
+    if (hovered) {
+      const point = list.find((p) => p.id === hovered);
+      if (point) {
+        const p = pos.get(point.id);
+        const label = point.text.length > 24 ? point.text.slice(0, 24) + '…' : point.text;
+        ctx.font = '12px "Microsoft YaHei", sans-serif';
+        const width = ctx.measureText(label).width + 14;
+        ctx.fillStyle = 'rgba(8,11,20,.88)';
+        ctx.strokeStyle = 'rgba(120,160,255,.28)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(p.x + 10, p.y - 22, width, 22, 6);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#dfe8ff';
+        ctx.fillText(label, p.x + 17, p.y - 7);
+      }
+    }
+
+    if (Date.now() - lastFetch > 60000) load(false);
+    requestAnimationFrame(frame);
+  }
+
+  // 每个点旁边标一句它是什么：按权重挑、按屏幕格子避让，缩放越大标得越多。
+  function drawPointLabels(list, pos, t) {
+    if (!showLabels) return;
+    const budget = Math.max(24, Math.min(280, Math.round(72 * (CAM_DEFAULT.dist / cam.dist))));
+    const rank = (p) => (focus.has(p.id) ? 4 : 0) + (p.id === selected ? 4 : 0) + (p.id === hovered ? 4 : 0) + (Number(p.weight) || 0);
+    const candidates = list
+      .filter((point) => {
+        if (!point.text || point.text.length < 2) return false;
+        const p = pos.get(point.id);
+        if (!p || p.f < 0.55) return false;   // 太远的点不标，留给近景
+        if (onlyFocus && focus.size) return focus.has(point.id) || point.id === hovered || point.id === selected;
+        return true;
+      })
+      .sort((a, b) => rank(b) - rank(a))
+      .slice(0, budget);
+
+    const occupied = new Set();
+    ctx.font = '11px system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+    ctx.textAlign = 'left';
+    for (const point of candidates) {
+      const p = pos.get(point.id);
+      if (!p) continue;
+      const label = point.text.length > 14 ? `${point.text.slice(0, 14)}…` : point.text;
+      const w = ctx.measureText(label).width;
+      const x = Math.round(p.x + 7);
+      const y = Math.round(p.y - 5);
+      if (x + w > innerWidth - 4 || x < -2) continue;
+      const cell = `${Math.floor(x / 104)}:${Math.floor(y / 14)}`;
+      if (occupied.has(cell)) continue;
+      occupied.add(cell);
+      const hot = point.id === hovered || point.id === selected || focus.has(point.id);
+      ctx.globalAlpha = hot ? 0.95 : 0.42;
+      ctx.fillStyle = hot ? '#e6efff' : '#93a3c4';
+      ctx.fillText(label, x, y);
+      if (hot) {
+        ctx.globalAlpha = 0.4;
+        ctx.fillStyle = '#78aaff';
+        ctx.fillRect(x - 3, y - 9, 1.2, 11);
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function pick(mx, my) {
+    const now = performance.now();
+    let best = null;
+    let bestDist = 16;
+    for (const point of points) {
+      const p = lastPos.get(point.id) || project(point, now);
+      const dist = Math.hypot(p.x - mx, p.y - my);
+      if (dist < bestDist) { bestDist = dist; best = point; }
+    }
+    return best;
+  }
+
+  function showDetail(point) {
+    if (!point) { detail.classList.remove('on'); return; }
+    detail.classList.add('on');
+    document.getElementById('dKind').textContent = point.diary ? `她的日记 · ${point.diary.date}` : (KIND_LABEL[point.kind] || point.kind);
+    document.getElementById('dText').textContent = point.full || point.text;
+    const when = new Date(point.t);
+    document.getElementById('dTime').textContent = `${when.getMonth() + 1}/${when.getDate()} ${String(when.getHours()).padStart(2, '0')}:${String(when.getMinutes()).padStart(2, '0')}`;
+    document.getElementById('dTopic').textContent = `主题 ${point.cluster || point.topic}`;
+    document.getElementById('dSource').textContent = point.source?.type === 'diary' ? '来自她自己写的日记' : (point.source?.type === 'longterm' ? '来自长期记忆' : '来自真实消息');
+    document.getElementById('dTags').innerHTML = (point.keywords || []).map((k) => `<span>${k}</span>`).join('');
+  }
+
+  // 左键拖动 = 转整片海（三维），右键拖动 = 平移，滚轮 = 拉近拉远。
+  window.addEventListener('mousedown', (event) => {
+    if (event.button !== 0 && event.button !== 2) return;
+    if (event.target.closest && event.target.closest('button, a, input, textarea')) return;
+    event.preventDefault();
+    dragging = {
+      x: event.clientX,
+      y: event.clientY,
+      mode: event.button === 2 ? 'pan' : 'orbit',
+      yaw: cam.yaw,
+      pitch: cam.pitch,
+      panX: cam.panX,
+      panY: cam.panY,
+    };
+    dragMoved = false;
+    canvas.style.cursor = 'grabbing';
+  });
+  canvas.addEventListener('contextmenu', (event) => event.preventDefault());
+  window.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = null;
+    canvas.style.cursor = 'grab';
+  });
+  window.addEventListener('mousemove', (event) => {
+    if (dragging) {
+      const dx = event.clientX - dragging.x;
+      const dy = event.clientY - dragging.y;
+      if (Math.hypot(dx, dy) > 4) dragMoved = true;
+      if (dragging.mode === 'orbit') {
+        cam.yaw = dragging.yaw + dx * 0.006;
+        cam.pitch = Math.max(-1.35, Math.min(1.35, dragging.pitch - dy * 0.006));
+      } else {
+        const k = cam.dist / FOCAL;
+        cam.panX = dragging.panX - dx * k;
+        cam.panY = dragging.panY - dy * k;
+      }
+      return;
+    }
+    if (event.target !== canvas) { hovered = null; return; }
+    const hit = pick(event.clientX, event.clientY);
+    hovered = hit ? hit.id : null;
+    canvas.style.cursor = hit ? 'pointer' : 'grab';
+  });
+  canvas.addEventListener('click', (event) => {
+    if (dragMoved) { dragMoved = false; return; }
+    const hit = pick(event.clientX, event.clientY);
+    selected = hit ? hit.id : null;
+    showDetail(hit);
+  });
+  canvas.addEventListener('wheel', (event) => {
+    event.preventDefault();
+    const factor = event.deltaY > 0 ? 1.08 : 0.92;
+    cam.dist = Math.min(3200, Math.max(380, cam.dist * factor));
+  }, { passive: false });
+
+  document.getElementById('btnFocus').addEventListener('click', (event) => {
+    onlyFocus = !onlyFocus;
+    event.currentTarget.classList.toggle('on', onlyFocus);
+  });
+  document.getElementById('btnLabels').addEventListener('click', (event) => {
+    showLabels = !showLabels;
+    event.currentTarget.classList.toggle('on', showLabels);
+  });
+  document.getElementById('btnRecent').addEventListener('click', (event) => {
+    const on = !event.currentTarget.classList.contains('on');
+    event.currentTarget.classList.toggle('on', on);
+    if (on && points.length > 300) {
+      points = points.slice(-300);
+      layout(points);
+      const ids = new Set(points.map((p) => p.id));
+      edges = edges.filter((e) => ids.has(e.a) && ids.has(e.b));
+    } else if (on === false) {
+      load(false);
+    }
+  });
+  document.getElementById('btnReset').addEventListener('click', () => { cam = { ...CAM_DEFAULT }; });
+
+  window.addEventListener('resize', resize);
+  resize();
+  load(true);
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
